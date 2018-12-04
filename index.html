@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link href="main.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="wrapper">
+                <h1>Ohio's Population Density Based on 2016 US Census Tract data</h1>
+                <svg width="1200" height="960"></svg>
+        </div>
+        <script src="https://unpkg.com/d3@5.6.0/dist/d3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+        <script src="https://unpkg.com/topojson@3.0.2/dist/topojson.min.js"></script>
+        <script>
+            const svg = d3.select('svg');
+
+            const width = +svg.attr('width');
+            const height = +svg.attr('height');
+
+            Promise.all([ 
+                d3.tsv('population.tsv'),
+                d3.json('ohio.topojson')
+            ]).then(([ohioTSV, ohioTOPO]) => {
+                const rowById = ohioTSV.reduce((acc, d) => {
+                    acc[d.tract] = d;
+                    return acc;
+                }, {})
+
+                const ohio = topojson.feature(ohioTOPO, ohioTOPO.objects.ohio)
+
+                ohio.features.forEach(d => {
+                    Object.assign(d.properties, rowById[d.properties.TRACTCE])
+                });
+            
+                const projection = d3.geoAlbers().rotate([85,0,0]).fitSize([800, 800], ohio)
+                const pathGenerator = d3.geoPath().projection(projection);
+
+                const g = svg.append('g');
+
+                const colorScale = d3.scaleQuantile()
+                                    .domain(ohio.features.map(d => {
+                                        const density = parseFloat(d.properties.pop / d.properties.ALAND) * 100;
+                                        
+                                        if(isNaN(density)) {
+                                            
+                                            return 0;
+                                        }
+                                        
+                                        
+                                        return density;
+                                    }).sort((a,b) => a - b))
+                                    .range(['#E5FFCC', '#CCFF99','#B2FF66','#66CC00', '#4C9900', '#397200' ,'#336600', '#264C00']);
+
+
+                g.selectAll('path')
+                        .data(ohio.features)
+                        .enter().append('path')
+                        .attr('d', d => pathGenerator(d))
+                        .attr('fill', d => {
+                            return colorScale(parseFloat(d.properties.pop / d.properties.ALAND) * 100)
+                        })
+
+                svg.call(d3.zoom().on('zoom', () => {
+                    g.attr('transform', d3.event.transform);
+                }));
+
+                 svg.append("g")
+                    .attr("class", "legendQuant")
+                    .attr("transform", "translate(800, 20)")
+
+                var legend = d3.legendColor()
+                                .labelFormat(d3.format(".2f"))
+                                .useClass(false)
+                                .title("Population Density Scale")
+                                .titleWidth(100)
+                                .scale(colorScale)
+
+                svg.select(".legendQuant")
+                    .call(legend)
+                
+                }).catch(err => console.log(err));   
+        </script>
+    </body>
+</html>
+
+
+

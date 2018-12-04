@@ -1,0 +1,28 @@
+/* body {
+    margin: 0px;
+    overflow: hidden;
+    background-color: darkblue;
+  }
+*/
+
+  .wrapper {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+  }
+  svg {
+      margin: 0 auto;
+  }
+
+  h1 {
+    text-align: center;
+  }
+
+  path {
+    /* fill: lightgreen; */
+    stroke: black;
+    stroke-opacity: 0.1;
+  } 
